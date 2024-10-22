@@ -1,0 +1,9 @@
+[package]
+name = "palettizer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rfd = "0.15.0"
+image = "0.25.4"
+eframe = "0.29.1"

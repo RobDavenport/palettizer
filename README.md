@@ -1,0 +1,1 @@
+A quick hacked project to convert images to a specified color palette.
