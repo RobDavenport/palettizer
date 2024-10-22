@@ -4,6 +4,7 @@ use eframe::{
     egui::{self, Color32, ColorImage, TextureFilter, TextureOptions, TextureWrapMode},
     NativeOptions,
 };
+use lab::Lab;
 use memory_image::MemoryImage;
 use palette::{Color, Palette};
 
@@ -14,7 +15,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Palettizer",
         NativeOptions::default(),
-        Box::new(|cc| Ok(Box::<PalettizerApp>::default())),
+        Box::new(|_cc| Ok(Box::<PalettizerApp>::default())),
     )
 }
 
@@ -27,16 +28,7 @@ struct PalettizerApp {
     preview_input_image_index: Option<usize>,
     preview_output_image: Option<MemoryImage>,
 
-    color_mode: ColorMode,
-}
-
-// TODO: Implement these features
-#[derive(Default)]
-enum ColorMode {
-    #[default]
-    Rgb,
-    Hsv,
-    Hsl,
+    use_lab: bool,
 }
 
 impl PalettizerApp {
@@ -76,11 +68,13 @@ impl PalettizerApp {
         }
 
         let mut image = ColorImage::new([unique_colors.len(), 1], Color32::BLACK);
+        let mut labs = Vec::new();
         let colors = unique_colors
             .into_iter()
             .enumerate()
             .map(|(index, color)| {
                 image.pixels[index] = Color32::from_rgb(color.x, color.y, color.z);
+                labs.push(Lab::from_rgb(&[color.x, color.y, color.z]));
                 color
             })
             .collect();
@@ -96,7 +90,11 @@ impl PalettizerApp {
             },
         );
 
-        Some(Palette { colors, handle })
+        Some(Palette {
+            colors,
+            handle,
+            labs,
+        })
     }
 
     fn load_input_images(ctx: &egui::Context) -> Option<Vec<MemoryImage>> {
@@ -143,6 +141,18 @@ impl eframe::App for PalettizerApp {
                 }
             }
 
+            if self.use_lab {
+                if ui.button("Lab: Enabled").clicked() {
+                    self.use_lab = false;
+                    should_recalculate = true;
+                }
+            } else {
+                if ui.button("Lab: Disabled").clicked() {
+                    self.use_lab = true;
+                    should_recalculate = true;
+                }
+            }
+
             if ui.button("Load Input Images").clicked() {
                 if let Some(inputs) = Self::load_input_images(ctx) {
                     self.input_images = Some(inputs);
@@ -170,7 +180,8 @@ impl eframe::App for PalettizerApp {
 
             if should_recalculate {
                 if let (Some(palette), Some(images)) = (&self.palette, &self.input_images) {
-                    self.preview_output_image = Some(images[0].load_preview(ctx, palette))
+                    self.preview_output_image =
+                        Some(images[0].load_preview(ctx, palette, self.use_lab))
                 }
             }
 

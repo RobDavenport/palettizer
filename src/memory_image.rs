@@ -1,8 +1,7 @@
 use std::path::PathBuf;
 
 use eframe::egui::{
-    self, Color32, ColorImage, Memory, TextureFilter, TextureHandle, TextureOptions,
-    TextureWrapMode,
+    self, Color32, ColorImage, TextureFilter, TextureHandle, TextureOptions, TextureWrapMode,
 };
 
 use crate::palette::{Color, Palette};
@@ -63,12 +62,21 @@ impl MemoryImage {
         })
     }
 
-    pub fn load_preview(&self, ctx: &egui::Context, palette: &Palette) -> MemoryImage {
+    pub fn load_preview(
+        &self,
+        ctx: &egui::Context,
+        palette: &Palette,
+        use_lab: bool,
+    ) -> MemoryImage {
         let mut new_colors = Vec::new();
         let mut color_data = ColorImage::new(self.dimensions, Color32::BLACK);
 
         for (index, pixel) in self.data.iter().enumerate() {
-            let palette_index = pixel.to_palette_index(palette);
+            let palette_index = if use_lab {
+                pixel.to_palette_index_lab(palette)
+            } else {
+                pixel.to_palette_index_rbg(palette)
+            };
             let new_color = palette.colors[palette_index].clone();
             new_colors.push(new_color.clone());
             color_data.pixels[index] =
